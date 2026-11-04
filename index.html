@@ -2,158 +2,35 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<!-- バグるLINE引き継ぎは 2026-11-05 に https://t3dining-store.github.io/baguru-line/ へ引っ越した（お店用アプリの引っ越し。../../お店用アプリの引っ越し.md）。
+     前のアドレス（https://t3dining.github.io/baguru-line/）は、公式アプリと保存場所が同じなので、開いたら、ここに残ったお店の保存を消して、新しいアドレスへのボタンを出す。
+     ★自動では移らない（ホーム画面のアイコンを入れ直してもらうため）。公開の道具が、前の公開先 t3dining/baguru-line に index.html として出す -->
+<title>バグるLINE引き継ぎ</title>
 <script>
-  /* バグる Owner・バグる Staff の中から開いたとき（?from=owner）だけ、viewport-fit=cover を外す（バグるマネージと同じ。わけは バグる Owner の README） */
   (function () {
-    var owner = /[?&]from=owner\b/.test(location.search);
-    try { owner = owner || sessionStorage.getItem('bg.fromOwner') === '1'; } catch (e) {}
-    if (!owner) return;
-    var v = document.querySelector('meta[name="viewport"]');
-    v.setAttribute('content', v.getAttribute('content').replace(/,\s*viewport-fit=cover/, ''));
-    addEventListener('pageshow', function (e) { if (!e.persisted) scrollTo(0, 0); });
+    // ★お店用アプリの引っ越し.md の「古い場所で消すもの」を全部、名前で1つずつ消す（社員のスマホは、1つの古いアイコンしか開かないことがある）。
+    //   bg. で始まる名前は、公式アプリのお客様の保存にも使っているので、まとめて消さない
+    var names = ['baguru.daicho.pin', 'baguru.daicho.seen', 'baguru.daicho.sound', 'baguru.daicho.shell', 'baguru.line.screen',
+      'bg.hpAdmin', 'baguru.yoyaku.owner', 'baguru.yoyaku.view', 'bg.cookRung', 'bg.hub', 'bg.owner'];
+    [function () { return localStorage; }, function () { return sessionStorage; }].forEach(function (box) {
+      try { var b = box(); names.forEach(function (k) { b.removeItem(k); }); } catch (e) {}
+    });
+    // 前のアドレスのサービスワーカーを外す
+    if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(function (rs) {
+      rs.forEach(function (r) { if (new URL(r.scope).pathname.indexOf('/baguru-line/') === 0) r.unregister(); });
+    }).catch(function () {});
   })();
 </script>
-<meta name="robots" content="noindex, nofollow">   <!-- お店の人の画面なので、検索に出さない -->
-<meta name="theme-color" content="#1f1916">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="LINE引き継ぎ">
-<title>バグるLINE引き継ぎ</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" href="img/line-icon-192.png">
-<link rel="apple-touch-icon" href="img/line-icon-180.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/line.css?v=bd0dedf7">
 </head>
-<body>
-<header class="l-top">
-  <button id="homeBtn" class="l-home" hidden>🏠 ホーム</button>
-  <h1><img src="img/line-icon-192.png" alt=""><span>バグるLINE引き継ぎ</span></h1>
-</header>
-
-<main>
-  <p id="wait" class="l-hint">読み込んでいます…</p>
-
-  <div id="install" class="l-install" hidden>
-    <button type="button" id="installBtn" class="l-btn l-sub">ホーム画面にインストールする</button>
-    <small>アイコンに Chrome のマークが付かない形で入ります</small>
-  </div>
-
-  <nav id="tabs" class="l-tabs" hidden>
-    <button type="button" data-tab="screen" class="on">画面のQR</button>
-    <button type="button" data-tab="paper">紙のQR</button>
-    <button type="button" data-tab="app">数を直す</button>
-  </nav>
-
-  <form id="login" class="l-login" hidden>
-    <h2>合言葉を入れてください</h2>
-    <p>予約ボード・Order受付と同じ合言葉です。1度入れると、この端末では次から入れなくて済みます。</p>
-    <input id="pin" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" maxlength="40" aria-label="合言葉">
-    <p id="loginErr" class="l-err" hidden></p>
-    <button id="loginBtn" class="l-btn">開く</button>
-  </form>
-
-  <section id="app" hidden>
-    <form id="find" class="l-find">
-      <input id="q" maxlength="40" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="探す言葉" placeholder="例：M2A4">
-      <button id="findBtn" class="l-btn">探す</button>
-    </form>
-    <p class="l-hint">数を間違えたときなどに、会員を探して数を直します（LINE の引き継ぎは「画面のQR」か「紙のQR」で行います）。会員番号はお客様のアプリのマイページに出ています。番号の一部、電話番号（4けた以上）、お名前でも探せます。何も入れずに探すと、最近動いた順に30人出ます。</p>
-    <p id="done" class="l-done" hidden></p>
-    <p id="err" class="l-err" hidden></p>
-    <p id="count" class="l-hint" hidden></p>
-    <ul id="list" class="l-list"></ul>
-    <p class="l-foot"><button type="button" id="forget" class="l-link">この端末の合言葉を消す</button></p>
-  </section>
-
-  <section id="screen" hidden>
-    <h2 class="l-h">お客様に見せるQR</h2>
-    <p class="l-hint">LINE の画面と同じ数を押すと、この画面にQRが大きく出ます。画面をお客様に向けて、公式アプリのスタンプの「LINEのポイントカードをお持ちの方」を押して読んでもらいます。</p>
-    <div id="nums" class="l-nums"></div>
-    <p id="sDone" class="l-done" hidden></p>
-    <p id="sErr" class="l-err" hidden></p>
-    <ul class="l-rules s-rules">
-      <li>読めないときは、画面を明るくして、QRを枠の中に大きく入れてもらいます。</li>
-      <li>読まれると「読み取られました」に変わります。お客様のアプリの「◯ポイント引き継ぎました」も見せてもらってください。</li>
-      <li>QRは出してから3分で閉じます。画面を出したまま置いておかないでください。</li>
-    </ul>
-    <p class="l-foot"><button type="button" id="remake" class="l-link">画面のQRを作り直す（お客様のアプリに「このQRは使えません」と出たとき）</button></p>
-  </section>
-
-  <section id="paper" hidden>
-    <h2 class="l-h">使えるQR</h2>
-    <div id="left" class="l-left"></div>
-    <p id="leftNote" class="l-hint"></p>
-    <p id="pDone" class="l-done" hidden></p>
-    <p id="pErr" class="l-err" hidden></p>
-
-    <h2 class="l-h">発行して PDF を保存する</h2>
-    <p class="l-hint">1組で 1〜15ポイントのQRが1枚ずつ、A6 の PDF（15ページ）になります。QRは何度でも使えるので、ふつうは1組で足ります。★同じQRは、あとから出し直せません。PDF を保存したら、A6 で印刷して保管してください。PDF も紙と同じように、ほかの人に渡さないでください。ホーム画面のアプリから保存できないときは、ブラウザで開いてください。</p>
-    <form id="issue" class="l-issue">
-      <label for="sets">組の数</label>
-      <select id="sets"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
-      <button id="issueBtn" class="l-btn">発行する</button>
-    </form>
-    <div id="issued" hidden>
-      <p id="issuedNote" class="l-done"></p>
-      <button type="button" id="pdfBtn" class="l-btn">PDF を保存する</button>
-    </div>
-
-    <h2 class="l-h">使い方</h2>
-    <ul class="l-rules">
-      <li>LINE の画面を見て、同じ数のQRをお客様に見せます。カウンターに置いたままにしません。引き継げるのは会員登録をした方だけです。</li>
-      <li>お客様が公式アプリのスタンプの「LINEのポイントカードをお持ちの方」を押して読みます。スマホのカメラアプリでは読めません。</li>
-      <li>読んだら回収して、レジの内側にしまいます。QRは何度でも使えます。引き継ぎは1人1回だけで、2回目はアプリが断ります。</li>
-      <li>LINE の引き継ぎは、この紙のQRか「画面のQR」だけです。読めないときは、明るい所でQRを枠の中に大きく入れてもらいます。カメラが使えないスマホでは引き継げません。</li>
-    </ul>
-
-    <h2 class="l-h">紙をなくしたとき・引き継ぎを終えるとき</h2>
-    <p class="l-hint">画面のQRも一緒に無効になります。この端末の画面のQRは、次に出すときに新しく作ります。</p>
-    <button type="button" id="voidBtn" class="l-btn l-sub">いま使えるQRを全部無効にする</button>
-  </section>
-</main>
-
-<dialog id="qrDlg" class="l-qr" aria-label="お客様に見せるQR">
-  <div class="qr-head"><small>炭焼ハンバーグ バグる</small><b>LINEからの引き継ぎ</b></div>
-  <p class="qr-n"><b id="qrN"></b>ポイント</p>
-  <div id="qrBox" class="qr-box"></div>
-  <p id="qrState" class="qr-state"></p>
-  <button type="button" id="qrClose" class="l-btn l-sub">閉じる</button>
-</dialog>
-
-
-<dialog id="pointDlg" class="l-dlg">
-  <form id="ptForm" novalidate>
-    <h3 id="ptTitle"></h3>
-    <p id="ptNo" class="pt-no"></p>
-    <p id="ptWho" class="pt-who"></p>
-    <div id="ptInput">
-      <div id="ptSign" class="l-seg">
-        <label><input type="radio" name="ptSign" value="1" checked><span>足す</span></label>
-        <label><input type="radio" name="ptSign" value="-1"><span>減らす</span></label>
-      </div>
-      <label class="l-field"><span id="ptLabel"></span><input id="ptN" class="pt-n" type="number" min="1" step="1" inputmode="numeric"></label>
-      <label id="ptNoteRow" class="l-field"><span>書き置き（なくても構いません。お客様には見えません）</span><input id="ptNote" maxlength="100" autocomplete="off"></label>
-    </div>
-    <div id="ptCheck" hidden>
-      <p id="ptAsk" class="pt-ask"></p>
-      <p class="pt-num"><b id="ptShow"></b></p>
-      <p id="ptAfter" class="pt-after"></p>
-      <p id="ptWarn" class="pt-warn"></p>
-    </div>
-    <p id="ptErr" class="l-err" hidden></p>
-    <div class="pt-btns">
-      <button type="button" id="ptBack" class="l-btn l-sub">やめる</button>
-      <button id="ptOk" class="l-btn">確かめる</button>
-    </div>
-  </form>
-</dialog>
-
-<script src="https://t3dining.github.io/baguru-app/js/data.js?v=98a58f4c"></script>   <!-- 公開するときは、公式アプリの公開先のものを読む（道具/公開する.py） -->
-<script src="js/line-pdf.js?v=3a8f5aa9"></script>
-<script src="js/line.js?v=e525ad63"></script>
+<body style="margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box;background:#faf6f0;color:#221c18;font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN',sans-serif;text-align:center;line-height:1.7">
+<div style="max-width:420px">
+  <p style="font-size:20px;font-weight:700;margin:0 0 12px">バグるLINE引き継ぎは、<br>新しいアドレスに引っ越しました</p>
+  <p style="margin:0 0 8px;color:#675d55">ホーム画面に入れているときは、このアイコンを消して、新しいアドレスから入れ直してください。</p>
+  <p style="margin:0 0 24px;color:#675d55">合言葉は、新しいアドレスでもう一度入れてください。</p>
+  <a id="go" href="https://t3dining-store.github.io/baguru-line/" style="display:inline-block;padding:14px 32px;border-radius:999px;background:#c7361d;color:#fff;font-size:17px;font-weight:700;text-decoration:none">新しいアドレスで開く</a>
+</div>
+<script>document.getElementById('go').href += location.search;   // バグる Owner・Staff から開いた印（?from=owner など）は、そのまま渡す</script>
 </body>
 </html>
